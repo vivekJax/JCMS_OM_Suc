@@ -51,24 +51,26 @@ library(Hmisc)
 library(viridis)           
 
 ################# SET WORKING DIRECTORY
-wd <- "/Users/vkumar/Box Sync/LAB/PSY todo/Oral Meth Sucrose Methamphetamine Drinking KOMP/2024_Feb_JCMS_OM_Suc/Data/"
+wd <- "/Users/vkumar/Box Sync/LAB/PSY todo/Oral Meth Sucrose Methamphetamine Drinking KOMP/2024_03_March_JCMS_OM_Suc/Data"
 
 setwd(wd)
 outputDir <- "../Suc_Processed/"
 
 ################# READ INPUT FILE 
-filename <- "/Users/vkumar/Box Sync/LAB/PSY todo/Oral Meth Sucrose Methamphetamine Drinking KOMP/2024_Feb_JCMS_OM_Suc/Data/2024-02-09 TOM_MasterDataTableQuery v3.txt"
+filename <- "/Users/vkumar/Box Sync/LAB/PSY todo/Oral Meth Sucrose Methamphetamine Drinking KOMP/2024_03_March_JCMS_OM_Suc/Data/MasterData_2024-03-08.xlsx"
 
 # Marina wanted the MouseID to maintain 0 in the front --> upload 012345 which is converted to 12345 with the statement below. It convets MouseID to int
 # d1 <- fread(filename, sep = '\t')
 
 # Read and maintain the MouseID as character
 # d1 <- fread(filename, sep = '\t', colClasses = c("MouseID" = "character")) # if TSV
-d1 <- read.csv(filename, sep = ',', colClasses = c("MouseID" = "character")) # if CSV
-d1 <- setDT(d1) # makes data.frame suitable for data.table
+# d1 <- read.csv(filename, sep = ',', colClasses = c("MouseID" = "character")) # if CSV
+# d1 <- setDT(d1) # makes data.frame suitable for data.table
 
 # Load EXCEL file
-# d1 <- as.data.table(read_xlsx(filename, sheet = "TOM_PSYQuery2" )) #made this correction to convert to data.table.
+# Specify Column types
+
+d1 <- as.data.table(read_excel(filename, sheet = "TOM_MasterDataTableQuery", guess_max = 10000), showWarnings = FALSE) #made this correction to convert to data.table.
 
 ################# CREATE A FOLDER FOR OUTPUT FILES 
 #  Create an empty folder in directory that is one level higher than the input file
@@ -185,7 +187,7 @@ d1$DrugPreferenceScore <- d1$DrugVolConsumed/(d1$DrugVolConsumed + d1$WaterVolCo
 # Note that for Meth the dose is in mg/L. For sucrose it is a percent w/v. 
 # We don't really use this number for sucrose. So this is OK. 
 # This unit is mg/g BW/day
-d1$DrugMassConsumed <- (d1$DrugDose * d1$DrugVolConsumed/1000)/d1$BodyWeight/d1$MeasureDays
+# d1$DrugMassConsumed <- (d1$DrugDose * d1$DrugVolConsumed/1000)/d1$BodyWeight/d1$MeasureDays
 ```
 
 ## Add test numbers
@@ -550,22 +552,22 @@ p1 <- p1 + facet_grid(.~ sex)
 print(p1)  
 
 
-p1 <- ggplot(toPlot1, aes(x = DrugDose, y = DrugPreferenceScore, color = strainName, group = strainName)) +
-      stat_summary(fun='mean', geom='point', position=pd) + 
-      stat_summary(fun="mean", geom='line', position=pd) +
-      geom_linerange(stat = "summary", fun.data = mean_se, position=pd) +
-      graphTheme + 
-      labs(title = toPlot, x= xaxisLabel, y = yaxisLabel) +
-      theme(legend.position="top") +
-      guides(col = guide_legend(nrow = 2)) +
-      theme(legend.title=element_blank()) +
-      scale_color_brewer(palette = "Dark2") +
-      theme(plot.title = element_text(size = 8, face = "bold")) 
-
-print(p1)
-
-p1 <- p1 + facet_grid(.~ sex)
-print(p1) 
+# p1 <- ggplot(toPlot1, aes(x = DrugDose, y = DrugPreferenceScore, color = strainName, group = strainName)) +
+#       stat_summary(fun='mean', geom='point', position=pd) + 
+#       stat_summary(fun="mean", geom='line', position=pd) +
+#       geom_linerange(stat = "summary", fun.data = mean_se, position=pd) +
+#       graphTheme + 
+#       labs(title = toPlot, x= xaxisLabel, y = yaxisLabel) +
+#       theme(legend.position="top") +
+#       guides(col = guide_legend(nrow = 2)) +
+#       theme(legend.title=element_blank()) +
+#       scale_color_brewer(palette = "Dark2") +
+#       theme(plot.title = element_text(size = 8, face = "bold")) 
+# 
+# print(p1)
+# 
+# p1 <- p1 + facet_grid(.~ sex)
+# print(p1) 
       
 }
 ```
