@@ -49,6 +49,8 @@ library(Rmisc)
 library(tidyfast)
 library(Hmisc)
 library(viridis)           
+library(ggpubr)
+library(rstatix)
 
 
 ################# SET WORKING DIRECTORY
@@ -80,6 +82,10 @@ d1 <- as.data.table(read_excel(filename, sheet = "TOM_MasterDataTableQuery", gue
 
 
 ```
+
+
+
+
 
 # Filtering Data
 
@@ -180,7 +186,10 @@ d1$DrugMassConsumed <- (as.numeric(d1$DrugDose) * d1$DrugVolConsumed/1000)/d1$Bo
 
 ```{r}
 # Making the date correct, if the date is not formatted correctly, adjust this I changed "%m/%d/%Y"
-d1$Date <- ymd(d1$Date)  
+# d1$Date <- ymd(d1$Date) 
+d1$Date <- parse_date_time(d1$Date, orders = c('mdy HMS', 'ymd')) #this should handle both formats
+
+
 
 ################# SORT BY MouseID AND TestDate
 d1 <- d1[order(MouseID, Date)]
@@ -261,7 +270,11 @@ d2 <- d1[!grepl(excluded_text, d13)]
 ### - C57BL/6J
 ### - C57BL/6NJ
 ### - DBA/2J
+
+#   ------------------------------------------------------------------------------
+### Fix certain Line Names
 ### ------------------------------------------------------------------------------
+### - Isca had two strains, merging them here
 
 ```{r}
 # Specify the text to exclude
@@ -269,6 +282,14 @@ excluded_strains <- c("B6SJL-Tg(5xFAD) HEMI", "B6SJL-Tg(5xFAD) NCAR", "C57BL/6J"
 
 # Filter the data, removing rows with the excluded text
 d2 <- d2[!strainName %in% excluded_strains, ]
+
+## Fix certain names of line 
+d2 <- d2[strainName == 'B6NJ-Isca1tm1a+/- Cyfip2-S968F<J> Hlethal', strainName := 'B6NJ-Isca1']
+d2 <- d2[strainName == 'B6NJ-Isca1tm1b+/- Cyfip2-S968F<J> H Lethal', strainName := 'B6NJ-Isca1']
+
+```
+
+
 
 ```
 
@@ -439,7 +460,7 @@ strainList <- levels(as.factor(d2$strainName))
 setwd(wd)
 setwd(file.path(outputDir))
 
-outFileNamePDF <- paste("IndividualStrainLinePlots.pdf") 
+outFileNamePDF <- paste("IndividualStrainLineEachDayPlots.pdf") 
 
 pdf(outFileNamePDF, 4,3)
 
@@ -460,7 +481,160 @@ print(p1)
 
 dev.off()
 
+
 ```
+
+```{r}
+#------------------------------------------------------------------------------
+# Line Plot
+PlotTitle <- ""
+xaxisLabel <- "Methamphetamine (mg/L)"
+yaxisLabel <- "mgMeth/gBW/day"
+
+#------------------------------------------------------------------------------
+# The errorbars overlapped, so use position_dodge to move them horizontally
+pd <- position_dodge(0.1) # move them .05 to the left and right
+
+strainList <- levels(as.factor(d2$strainName))
+
+setwd(wd)
+setwd(file.path(outputDir))
+
+outFileNamePDF <- paste("IndividualStrainLinePlot_OM.pdf") 
+
+pdf(outFileNamePDF, 4,3)
+
+for (toPlot in strainList) {
+  # if the strain is control then skip
+  if(toPlot=="B6NJ-Cyfip2 S968F<J> (GET204)") next
+  # extract the animal to plot
+  toPlot1 <- d2[d2$strainName %in% c(toPlot, "B6NJ-Cyfip2 S968F<J> (GET204)"), ]
+
+
+
+p1 <- ggplot(toPlot1, aes(x = as.factor(DrugDose), y = DrugMassConsumed, color = strainName, group = strainName)) +
+      geom_linerange(stat = "summary", fun.data = mean_se, position=pd, color = "gray50") +
+      stat_summary(fun='mean', geom='point', position=pd, shape = 19) + 
+      stat_summary(fun="mean", geom='line', position=pd) +
+      graphTheme + 
+      labs(title = toPlot, x= xaxisLabel, y = yaxisLabel) +
+      theme(legend.position="top") +
+      guides(col = guide_legend(nrow = 2)) +
+      theme(legend.title=element_blank()) +
+      scale_color_brewer(palette = "Dark2") +
+      theme(plot.title = element_text(size = 8, face = "bold")) 
+print(p1)  
+
+p1 <- p1 + facet_grid(.~ sex)
+print(p1)  
+
+}
+
+dev.off()
+
+#------------------------------------------------------------------------------
+################ Add significance testing
+# https://www.datanovia.com/en/blog/how-to-add-p-values-onto-a-grouped-ggplot-using-the-ggpubr-r-package/
+
+
+outFileNamePDF <- paste("IndividualStrainLinePlotPvalues_OM.pdf") 
+
+pdf(outFileNamePDF, 4,3)
+for (toPlot in strainList) {
+      tryCatch({
+
+  # if the strain is control then skip
+  if(toPlot=="B6NJ-Cyfip2 S968F<J> (GET204)") next
+  # extract the animal to plot
+  toPlot1 <- d2[d2$strainName %in% c(toPlot, "B6NJ-Cyfip2 S968F<J> (GET204)"), ]
+
+
+stat.test <- toPlot1 %>%
+  group_by(DrugDose) %>%
+  t_test(DrugMassConsumed ~ strainName) %>%
+  adjust_pvalue(method = "none") %>%
+  add_significance("p.adj")
+stat.test
+
+
+p1 <- ggline(toPlot1, 
+             x = "DrugDose", 
+             y = "DrugMassConsumed", 
+             add = "mean_se", 
+             color = "strainName", 
+             position=pd, 
+             palette = c("#00AFBB", "#E7B800"))
+p1 <- p1 + labs(color=NULL) 
+p1 <- p1 + guides(col = guide_legend(nrow = 2))
+
+# Add p-values onto the line plots
+# Remove brackets using linetype = "blank"
+stat.test <- stat.test %>%
+  add_xy_position(fun = "mean_se", x = "DrugDose") 
+
+p1 <- p1 + stat_pvalue_manual(
+  stat.test,  label = "{p.adj}{p.adj.signif}", 
+  tip.length = 0, linetype  = "blank")
+  
+print(p1)
+}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+
+}
+dev.off()
+
+#------------------------------------------------------------------------------
+################ Add significance testing by sex
+# https://www.datanovia.com/en/blog/how-to-add-p-values-onto-a-grouped-ggplot-using-the-ggpubr-r-package/
+# https://www.datanovia.com/en/blog/add-p-values-to-ggplot-facets-with-different-scales/
+
+
+outFileNamePDF <- paste("IndividualStrainLinePlotSexPvalues_OM.pdf") 
+
+pdf(outFileNamePDF, 6,4)
+for (toPlot in strainList) {
+    tryCatch({
+  
+  # if the strain is control then skip
+  if(toPlot=="B6NJ-Cyfip2 S968F<J> (GET204)") next
+  # extract the animal to plot
+  toPlot1 <- d2[d2$strainName %in% c(toPlot, "B6NJ-Cyfip2 S968F<J> (GET204)"), ]
+
+
+stat.test <- toPlot1 %>%
+  group_by(DrugDose, sex) %>%
+  t_test(DrugMassConsumed ~ strainName) %>%
+  adjust_pvalue(method = "none") %>%
+  add_significance("p.adj")
+stat.test
+
+
+p1 <- ggline(toPlot1, 
+             x = "DrugDose", 
+             y = "DrugMassConsumed", 
+             add = "mean_se", 
+             color = "strainName", 
+             position=pd, 
+             palette = c("#00AFBB", "#E7B800"),
+             facet.by = "sex")
+p1 <- p1 + labs(color=NULL) 
+p1 <- p1 + guides(col = guide_legend(nrow = 2))
+
+# Add p-values onto the line plots
+# Remove brackets using linetype = "blank"
+stat.test <- stat.test %>%
+  add_xy_position(fun = "mean_se", x = "DrugDose") 
+
+p1 <- p1 + stat_pvalue_manual(stat.test,  label = "{p.adj}{p.adj.signif}", tip.length = 0, linetype  = "blank")
+
+print(p1)
+
+}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+
+}
+dev.off()
+```
+
+
 
 # Check Body Weights Over Tests
 > summary(d2$BodyWeight)
