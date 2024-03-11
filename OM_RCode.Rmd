@@ -37,7 +37,7 @@ contrast responses between methamphetamine and sucrose data.
 
 ## Importing Libraries
 
-```{r}
+```{r, echo=FALSE, warning=FALSE}
 library(stringr)
 library(dplyr)
 #library(reshape2)
@@ -286,10 +286,6 @@ d2 <- d2[!strainName %in% excluded_strains, ]
 ## Fix certain names of line 
 d2 <- d2[strainName == 'B6NJ-Isca1tm1a+/- Cyfip2-S968F<J> Hlethal', strainName := 'B6NJ-Isca1']
 d2 <- d2[strainName == 'B6NJ-Isca1tm1b+/- Cyfip2-S968F<J> H Lethal', strainName := 'B6NJ-Isca1']
-
-```
-
-
 
 ```
 
