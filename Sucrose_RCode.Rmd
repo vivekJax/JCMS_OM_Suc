@@ -533,7 +533,7 @@ p1 <- ggplot(toPlot1, aes(x = as.factor(DrugDose), y = DrugPreferenceScore, , fi
       facet_grid(sex~strainName, labeller = labeller(strainName = label_wrap_gen(width = 25))) +
       scale_fill_brewer(palette="Blues") + 
       theme_bw() + 
-      labs(title=stringr::str_wrap(toPlot, width=40), y = "mgMeth/gBW/day") + 
+      labs(title=stringr::str_wrap(toPlot, width=40), y = "Sucrose Preference (%)") + 
       theme(plot.title = element_text(size = 10, face = "bold")) +
       theme(legend.position="none") + 
       theme(strip.text.x = element_text(size = 8), # decrease facet font size
