@@ -53,13 +53,13 @@ library(ggpubr)
 library(rstatix)
 
 ################# SET WORKING DIRECTORY
-wd <- "/Users/vkumar/Box Sync/LAB/PSY todo/Oral Meth Sucrose Methamphetamine Drinking KOMP/2024_03_March_JCMS_OM_Suc/Data"
+wd <- "/Users/vkumar/Box Sync/LAB/PSY todo/Oral Meth Sucrose Methamphetamine Drinking KOMP/2024 May21/Data"
 
 setwd(wd)
 outputDir <- "../Suc_Processed/"
 
 ################# READ INPUT FILE 
-filename <- "/Users/vkumar/Box Sync/LAB/PSY todo/Oral Meth Sucrose Methamphetamine Drinking KOMP/2024_03_March_JCMS_OM_Suc/Data/MasterData_2024-03-08.xlsx"
+filename <- "/Users/vkumar/Box Sync/LAB/PSY todo/Oral Meth Sucrose Methamphetamine Drinking KOMP/2024 May21/Data/JCMS_Export_05.21.2024.xlsx"
 
 # Marina wanted the MouseID to maintain 0 in the front --> upload 012345 which is converted to 12345 with the statement below. It convets MouseID to int
 # d1 <- fread(filename, sep = '\t')
@@ -457,6 +457,26 @@ p1 <- ggplot(toPlot1, aes(x = as.factor(DrugDose), y = DrugPreferenceScore, colo
       scale_y_continuous(limits = c(-.5, 1.5)) +
       guides(col = guide_legend(nrow = 8)) +
       facet_grid(.~sex)
+
+print(p1)
+
+p1 <- ggplot(toPlot1, aes(x = as.factor(DrugDose), y = DrugPreferenceScore, color=MouseID, group = MouseID)) +
+      geom_line() + 
+      geom_point(shape = 1.5) +   
+      theme_classic() + 
+      labs(title=stringr::str_wrap(toPlot, width=40), y = "% Pref") + 
+      theme(legend.position="right") +
+      scale_y_continuous(limits = c(-.5, 1.5)) +
+      guides(col = guide_legend(nrow = 8)) +
+      facet_wrap(.~MouseID) +
+      theme(legend.position="none") +
+      theme(axis.text = element_text( size = 5),
+           axis.text.x = element_text( size = 5),
+           axis.title = element_text( size = 5, face = "bold" ),
+           legend.position="none",
+           # The new stuff
+           strip.text = element_text(size = 5))
+
 
 print(p1)
  
