@@ -55,13 +55,13 @@ library(zoo)
 
 
 ################# SET WORKING DIRECTORY
-wd <- "/Users/vkumar/Box Sync/LAB/PSY todo/Oral Meth Sucrose Methamphetamine Drinking KOMP/2024 May21/Data"
+wd <- "/Users/vkumar/Box Sync/LAB/PSY todo/Oral Meth Sucrose Methamphetamine Drinking KOMP/2024 Jun13/JCMS_OM_Suc/Data"
 
 setwd(wd)
 outputDir <- "../OM_Processed/"
 
 ################# READ INPUT FILE 
-filename <- "/Users/vkumar/Box Sync/LAB/PSY todo/Oral Meth Sucrose Methamphetamine Drinking KOMP/2024 May21/Data/JCMS_Export_05.21.2024.xlsx"
+filename <- "/Users/vkumar/Box Sync/LAB/PSY todo/Oral Meth Sucrose Methamphetamine Drinking KOMP/2024 Jun13/JCMS_OM_Suc/Data/JCMS_Export_06_13_2024.xlsx"
 
 # Marina wanted the MouseID to maintain 0 in the front --> upload 012345 which is converted to 12345 with the statement below. It convets MouseID to int
 # d1 <- fread(filename, sep = '\t')
@@ -139,6 +139,14 @@ d1$Date <- parse_date_time(d1$Date, orders = c('mdy HMS', 'ymd')) #this should h
 
 ```
 
+## Order the data by MouseID and Date
+
+```{r}
+
+################# SORT BY MouseID AND TestDate
+d1 <- d1[order(MouseID, Date)]
+
+```
 
 ## Interpolate Body Weight (BW)
 In the current version of the methods used in 2024, we do not collect BW each time. The BW for OM must be interpolated.
@@ -148,7 +156,7 @@ A key is the `rule = 2`, this will copy the last BW is outside the interval. For
 ```{r}
 
 
-# Interpolate missing heights for each mouse
+# Interpolate missing weights for each mouse
 for (mouse in levels(as.factor(d1$MouseID))) {
   tryCatch({
   print(mouse)
@@ -182,9 +190,6 @@ d1 <- d1[DataType == "Oral methamphetamine"]
 ## Add test numbers
 
 ```{r}
-
-################# SORT BY MouseID AND TestDate
-d1 <- d1[order(MouseID, Date)]
 
 ################# ADD TEST NUMBER AS A NEW COLUMN
 d1 <- d1[ , TestNumber := order(Date), by = MouseID]
@@ -581,7 +586,6 @@ p1 <- ggplot(toPlot1, aes(x = as.factor(DrugDose), y = DrugMassConsumed, color =
       geom_linerange(stat = "summary", fun.data = mean_se, position=pd, color = "gray50") +
       stat_summary(fun='mean', geom='point', position=pd, shape = 19) + 
       stat_summary(fun="mean", geom='line', position=pd) +
-      graphTheme + 
       labs(title = toPlot, x= xaxisLabel, y = yaxisLabel) +
       theme(legend.position="top") +
       guides(col = guide_legend(nrow = 2)) +
@@ -727,7 +731,7 @@ p1 <- ggplot(toPlot1, aes(x = as.factor(TestNumber), y = BodyWeight, , color=Mou
       theme_classic() + 
       labs(title=stringr::str_wrap(toPlot, width=40), y = "Grams") + 
       theme(legend.position="right") +
-      scale_y_continuous(limits = c(15, 35)) +
+      # scale_y_continuous(limits = c(15, 35)) +
       guides(col = guide_legend(nrow = 8)) +
       facet_grid(.~sex)
 
@@ -738,7 +742,7 @@ p1 <- ggplot(toPlot1, aes(x = as.factor(TestNumber), y = BodyWeight, , color=Mou
       geom_point(shape = 1.5) +   
       theme_classic() + 
       labs(title=stringr::str_wrap(toPlot, width=40), y = "Grams") + 
-      scale_y_continuous(limits = c(15, 35)) +
+      # scale_y_continuous(limits = c(15, 35)) +
       guides(col = guide_legend(nrow = 8)) +
       facet_wrap(.~MouseID)+
       theme(legend.position="none") +
